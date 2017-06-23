@@ -1,19 +1,21 @@
-# skeleton-module [![travis][travis-image]][travis-url] [![npm][npm-image]][npm-url] [![downloads][downloads-image]][downloads-url] [![Greenkeeper badge](https://badges.greenkeeper.io/PolkaJS/skeleton-module.svg)](https://greenkeeper.io/)
+# merkle-patricia-tree [![travis][travis-image]][travis-url] [![npm][npm-image]][npm-url] [![downloads][downloads-image]][downloads-url] [![Greenkeeper badge](https://badges.greenkeeper.io/PolkaJS/merkle-patricia-tree.svg)](https://greenkeeper.io/)
 
-[travis-image]: https://travis-ci.org/PolkaJS/skeleton-module.svg?branch=master
-[travis-url]: https://travis-ci.org/PolkaJS/skeleton-module
-[npm-image]: https://img.shields.io/npm/v/@polkajs/skeleton-module.svg
-[npm-url]: https://npmjs.org/package/@polkajs/skeleton-module
-[downloads-image]: https://img.shields.io/npm/dm/@polkajs/skeleton-module.svg
-[downloads-url]: https://npmjs.org/package/@polkajs/skeleton-module
+[travis-image]: https://travis-ci.org/PolkaJS/merkle-patricia-tree.svg?branch=master
+[travis-url]: https://travis-ci.org/PolkaJS/merkle-patricia-tree
+[npm-image]: https://img.shields.io/npm/v/@polkajs/merkle-patricia-tree.svg
+[npm-url]: https://npmjs.org/package/@polkajs/merkle-patricia-tree
+[downloads-image]: https://img.shields.io/npm/dm/@polkajs/merkle-patricia-tree.svg
+[downloads-url]: https://npmjs.org/package/@polkajs/merkle-patricia-tree
 
 ## About
 
-**Create new modules with this skeleton**
+Merkle Patricia trees provide a cryptographically authenticated data structure that can be used to store all (key, value) bindings, although for the scope of this paper we are restricting keys and values to strings (to remove this restriction, just use any serialization format for other data types). They are fully deterministic, meaning that a Patricia tree with the same (key,value) bindings is guaranteed to be exactly the same down to the last byte and therefore have the same root hash, provide the holy grail of O(log(n)) efficiency for inserts, lookups and deletes, and are much easier to understand and code than more complex comparison-based alternatives like red-black trees.
 
-`git clone https://github.com/PolkaJS/skeleton-module.git`
+## Further Reading
 
-`git remote rm origin`
+[Ethereum Patricia Tree](https://github.com/ethereum/wiki/wiki/Patricia-Tree)
+
+[Understanding the Ethereum Trie](https://easythereentropy.wordpress.com/2014/06/04/understanding-the-ethereum-trie/)
 
 ISC License (ISC)
 Copyright 2017 <Zion Coin>

@@ -1,8 +1,8 @@
 {
-  "name": "@polkajs/skeleton-module",
-  "version": "1.0.1",
-  "description": "When creating new modules, use this skeletal structure",
-  "main": "index.js",
+  "name": "@polkajs/merkle-patricia-tree",
+  "version": "1.0.0",
+  "description": "Merkle Patricia Tree Implementation for the Ethereum type blockchain",
+  "main": "./lib/MerklePatricia.js",
   "scripts": {
     "lint+build+test": "yarn run lint && yarn run build && yarn run test",
     "lint": "echo linting... && eslint ./src/**/*.js && echo 'successfully linted'",
@@ -12,14 +12,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/PolkaJS/skeleton-module.git"
+    "url": "git+https://github.com/PolkaJS/merkle-patricia-tree.git"
   },
   "author": "Craig OConnor",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/PolkaJS/skeleton-module/issues"
+    "url": "https://github.com/PolkaJS/merkle-patricia-tree/issues"
   },
-  "homepage": "https://github.com/PolkaJS/skeleton-module#readme",
+  "homepage": "https://github.com/PolkaJS/merkle-patricia-tree#readme",
   "devDependencies": {
     "babel-cli": "^6.24.1",
     "babel-eslint": "^7.2.3",
