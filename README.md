@@ -15,9 +15,14 @@ Merkle Patricia trees provide a cryptographically authenticated data structure t
 
 [Ethereum Patricia Tree](https://github.com/ethereum/wiki/wiki/Patricia-Tree)
 
+[blog post](https://blog.ethereum.org/2015/11/15/merkling-in-ethereum/)
+
 [Understanding the Ethereum Trie](https://easythereentropy.wordpress.com/2014/06/04/understanding-the-ethereum-trie/)
 
-ISC License (ISC)
+
+
+## ISC License (ISC)
+
 Copyright 2017 <Zion Coin>
 Copyright (c) 2004-2010 by Internet Systems Consortium, Inc. ("ISC")
 Copyright (c) 1995-2003 by Internet Software Consortium

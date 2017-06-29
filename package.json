@@ -1,7 +1,7 @@
 {
   "name": "@polkajs/merkle-patricia-tree",
   "version": "1.0.0",
-  "description": "Merkle Patricia Tree Implementation for the Ethereum type blockchain",
+  "description": "Merkle Patricia Tree implementation for the Ethereum type blockchain",
   "main": "./lib/MerklePatricia.js",
   "scripts": {
     "lint+build+test": "yarn run lint && yarn run build && yarn run test",
@@ -23,12 +23,22 @@
   "devDependencies": {
     "babel-cli": "^6.24.1",
     "babel-eslint": "^7.2.3",
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.24.1",
+    "babel-preset-es2015": "^6.24.1",
     "babel-preset-flow": "^6.23.0",
     "eslint": "^4.0.0",
     "flow-bin": "^0.48.0",
     "random-words": "0.0.1",
     "rlp": "^2.0.0",
-    "sha3": "^1.2.0",
     "tape": "^4.6.3"
+  },
+  "dependencies": {
+    "@polkajs/rlp": "^1.3.9",
+    "keccak": "^1.3.0",
+    "leveldown": "^1.7.2",
+    "levelup": "^1.3.8",
+    "sha3": "^1.2.0"
   }
 }
