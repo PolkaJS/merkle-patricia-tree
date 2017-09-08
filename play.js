@@ -1,15 +1,32 @@
 // const MerklePatricia = require('./lib/MerklePatricia').default;
 const SHA3 = require('sha3');
 const rlp  = require('@polkajs/rlp');
-const createKeccakHash = require('keccak')
+const createKeccakHash = require('keccak');
+const MerklePatricia   = require('./lib/MerklePatricia').default;
+
+const MP = new MerklePatricia();
+
+// let r = rlp.encode([Buffer.from('\x01\x03'), 'ho']);
+// let d = rlp.decode_str(r);
+// console.log(d);
+
+let root = MP.update('begin', 'start');
+console.log(root);
+MP.get('6e8c809a9347d7001428a3f9ed5cd9585f6c51ee1c559e07ec21803e662bca82', (err, res) => {
+  console.log(res);
+  console.log(rlp.decode_str(Buffer.from(res, 'hex')));
+});
+
+block_diff = parent_diff + parent_diff // 2048 * max(1 - (block_timestamp - parent_timestamp) // 10, -99) + int(2**((block.number // 100000) - 2))
+
 // //
-let x = rlp.encode([Buffer.from('2064657374', 'hex'), '6f6e65'])
+// let x = rlp.encode([Buffer.from('2064657374', 'hex'), '6f6e65'])
 // //
-console.log(x);
-let sha = new SHA3.SHA3Hash(256).update(x).digest('hex');
+// console.log(x);
+// let sha = new SHA3.SHA3Hash(256).update(x).digest('hex');
 // let sha2 = createKeccakHash('keccak' + 256).update(x).digest();
 // //
-console.log(sha);
+// console.log(sha);
 // console.log(sha2);
 // // const fs = require('fs');
 // //

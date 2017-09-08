@@ -16,8 +16,8 @@ export default class DB {
     this.db = levelup('./db/');
   }
 
-  put(hash: string, block: string) {
-    this.db.put(hash, block, (err) => {
+  put(hash: string, node: string) {
+    this.db.put(hash, node, (err) => {
       if (err) return err;
       return null;
     });
