@@ -16,35 +16,35 @@ export default class DB {
     this.db = levelup('./db/');
   }
 
-  put(hash: string, node: string) {
+  put(hash: string, node: Buffer, cb: Function) {
     this.db.put(hash, node, (err) => {
-      if (err) return err;
-      return null;
+      if (err) cb(err);
+      cb(null);
     });
   }
 
   get(hash: string, cb: Function) {
     this.db.get(hash, (err, value) => {
-      if (err) return err;
-      cb(null, value);
+      if (err) cb(err);
+      cb(null, Buffer.from(value));
     });
   }
 
   delete(hash: string, cb: Function) {
     this.db.delete(hash, (err) => {
-      if (err) return err;
+      if (err) cb(err);
       cb(null);
     })
   }
 
   // [ ['0x1a4...df2', { block data }], ['0xcb1...bb5', { block data }], ... ]
-  batchPut(hashValuePairs: Array<Array<mixed>>) {
+  batchPut(hashValuePairs: Array<Array<mixed>>, cb: Function) {
     const hashes = hashValuePairs.map((hash) => {
       return { type: 'put', key: hash[0], value: hash[1] }
     });
     this.db.batch(hashes, (err) => {
-      if (err) return err;
-      return null;
+      if (err) cb(err);
+      cb(null);
     });
   }
 }

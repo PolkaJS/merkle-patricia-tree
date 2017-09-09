@@ -20,13 +20,13 @@ export function toNibbles(s: Buffer | string): Array<number> {
     * [6, 8, 6, 5, 6, 12, 6, 12, 6, 15]
     **/
   if (!Buffer.isBuffer(s)) {
-    s = Buffer.from(s);
+    s = Buffer.from(s, 'hex');
   }
   let result = [];
   while (s.length) { // $FlowFixMe
-    result.push(s.readUInt8(0) >> 4); // assuming 'h' or '65', this will return the first four bits $FlowFixMe
-    result.push(s.readUInt8(0) & 15); // and this will return the last 4
-    s = s.slice(1);                   // take the two nibbles out
+    result.push(s.readUInt8(0) >> 4); // assuming 'h' or '68', this will return the first four bits or '6' $FlowFixMe
+    result.push(s.readUInt8(0) & 15); // and this will return the last 4 bits or '8'
+    s = s.slice(1);                   // remove the two nibbles
   }
   return result;
 }

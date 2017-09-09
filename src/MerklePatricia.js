@@ -5,8 +5,8 @@ import util     from './util';
 
 const RLP = require('@polkajs/rlp');
 
-const BLANK_NODE        = null;
-const BLANK_ROOT        = null;
+const BLANK_NODE        = '';
+const BLANK_ROOT        = '';
 const NIBBLE_TERMINATOR = 16;
 
 /**
@@ -43,35 +43,39 @@ class MerklePatricia extends DB {
     self.rootNode = [];
   }
 
-  update(key: string | Buffer, value: string | Buffer): null | string {
+  update(key: string | Buffer, value: string | Buffer): null | string | Buffer {
     const self = this;
-    const newKey = self.addHexPrefix(util.toNibbles(key), true);
-
+    let newKey = util.toNibbles(key);
+    // improper length
     if (!key || key.length > 32) {
       return null;
     }
+    if (!value || !value.length) self.deleteKey(self.root, newKey, value);
 
-    // let node = '';
-    // if (self.root) {
-    //   // Root exists so lets get the node
-    //   const newValue = RLP.encode(value);
-    //   let node = self.db.get(self.root);
-    //   (!value || !value.length)
-    //     ? self.deleteKey(node, newKey, value)
-    //     : self.traverseTree(node, newKey, value);
-    // } else {
-    //   // Root hash is empty
-    //   console.log("newKey", newKey.toString());
-    //   node = RLP.encode([newKey.toString(), value]).toString('hex');
-    //   console.log("node", node);
-    //   self.db.put(self.createRoot(node), node);
-    // }
-
-    self.rootNode = self._updateAndDelete(self.rootNode, util.toNibbles(key), value);
-    return self.root;
+    let node = new Buffer(0);
+    if (self.root) {
+      // Root exists so lets get the node
+      self.db.get(self.root, (err, node) => {
+        if (err) return err;
+        // unpack
+        node = RLP.decode(node);
+        node[0] = util.toNibbles(node[0]);
+        let newNode = self._update(node, newKey, value);
+        // if (newNode != node)
+        //   self.db.delete(node);
+        node = newNode;
+      });
+    } else {
+      // Root hash is empty; add a hex prefix
+      newKey = self.addHexPrefix(newKey, true);
+      node = RLP.encode([util.nibblesToBuffer(newKey), value]);
+    }
+    self.root = self.createRoot(node);
+    self.db.put(self.root, node);
+    return node;
   }
 
-  _getNodeType(node: Array<number> | null): number | null {
+  _getNodeType(node: Array<number>): number | null {
     if (!node)
       return NODE_TYPE.BLANK;
     if (node.length === 2) {
@@ -86,40 +90,60 @@ class MerklePatricia extends DB {
     return null;
   }
 
-  _updateAndDelete(node: Array<number>, key: Array<number>, value: string | Buffer): Array<number> {
-    const oldNode = node.slice();
-    const newNode = this._update(node, key, value);
-    if (oldNode !== newNode)
-      self._deleteNode(oldNode);
-    return newNode;
+  _addToBranch(branch: Array<Array<any>>, key: Array<number>, value: string | Buffer): Array<Array<number>> {
+    if (!key.length)
+      branch[-1] = [null, value];
+    else
+      branch[key[0]] = [this.addHexPrefix(key.slice(1), true), value];
+    return branch;
   }
 
-  _update(node: Array<number>, key: Array<number>, value: string | Buffer): Array<number> {
-    let nodeType = self._getNodeType(node);
-    if (nodeType === NODE_TYPE.BLANK)
-      return [util.toNibbles(key), RLP.encode(value)];
-    if (nodeType === NODE_TYPE.BRANCH) {
-      // TODO
-      if (!key) {
-        node[-1] = RLP.encode(value);
+  _update(node: Array<any>, key: Array<number>, value: string | Buffer): Buffer {
+    const self = this;
+    const nodeType = self._getNodeType(node[0]);
+    let prefix;
+    [prefix, node[0], key] = self._nodeUnshift(node[0], key);
+    if (nodeType === NODE_TYPE.LEAF) {
+      // check if matching prefix
+      let branch = new Array(17);
+      branch = self._addToBranch(branch, key, value);
+      branch = self._addToBranch(branch, node[0], node[1]);
+      if (!prefix.length) {
+        node = branch
       } else {
-        let newNode = this._updateAndDelete(node[0], key.slice(1), value);
-        node[0] = self._encodeNode(newNode);
+        let hash = self.createRoot(RLP.encode(branch));
+        self.db.put(hash, node);
+        node = [self.addHexPrefix(prefix), hash];
       }
-      return node;
+    } else if (nodeType === NODE_TYPE.BRANCH) {
+      // add to branch; but if the branch has a value there already, split
+
+    } else if (nodeType === NODE_TYPE.EXTENSION) {
+      // if an extension and they match
+      self.db.get(node[1], (err, newNode) => {
+        if (err) return err;
+        // unpack
+        newNode    = RLP.decode(newNode);
+        newNode[0] = util.toNibbles(newNode[0]);
+        // let leftover;
+        // [leftover, newNode, key] = self._update(newNode, self._nodeUnshift(newNode[0], key), value);
+      });
+      // if an extension and length is 1 create branch
+
     }
-    if (nodeType === NODE_TYPE.LEAF || nodeType === NODE_TYPE.EXTENSION)
-      return self._updateKVnode(node, key, value);
-    return [];
+    node = RLP.encode(node);
+    let hash = self.createRoot(node);
+    self.db.put(hash, node);
+    return new Buffer(0);
   }
 
-  _updateKVnode(node: Array<number>, key: Array<number>, value: string | Buffer): Array<number> {
-    // TODO
-    return [];
-  }
-
-  traverseTree(node: any, key: Array<number>, value: string | Buffer) {
-
+  _nodeUnshift(nodeKey: Array<number>, key: Array<number>): Array<Array<number>> {
+    // lets get the shared values of nodeKey and key:
+    let length   = (nodeKey.length > key.length) ? key.length : nodeKey.length;
+    let leftSize = 0;
+    while (nodeKey[leftSize] === key[leftSize])
+      leftSize++;
+    return [key.slice(0, leftSize), nodeKey.slice(leftSize), key.slice(leftSize)]; // [left slice, right slice of node, right slice of key]
   }
 
   deleteKey(node: any, key: Array<number>, value: string | Buffer) {
@@ -158,6 +182,13 @@ class MerklePatricia extends DB {
 
     key.unshift(HP);
     return key;
+  }
+
+  removeHexPrefix(key: Array<number>): Array<number> {
+    if (key[0] === 0 || key[0] === 2) {
+      return key.slice(2);
+    }
+    return key.slice(1);
   }
 
   createRoot(payload: string | Buffer): string {
