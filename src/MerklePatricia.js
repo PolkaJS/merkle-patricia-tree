@@ -131,16 +131,11 @@ class MerklePatricia extends DB {
       let branch = new Array(17);
       branch = self._addToBranch(branch, key, value);
       branch = self._addToBranch(branch, node[0], node[1]);
-      if (!prefix.length) {
-        node = branch;
+      self._updateDB(branch, (err, hash) => {
+        if (err) cb(err);
+        node = [self.addHexPrefix(prefix), hash];
         self._updateDB(node, cb);
-      } else { // create and store branch, then update node
-        self._updateDB(branch, (err, hash) => {
-          if (err) cb(err);
-          node = [self.addHexPrefix(prefix), hash];
-          self._updateDB(node, cb);
-        });
-      }
+      });
     } else { // (type === NODE_TYPE.EXTENSION) we have key values left over in the key but node_key (node[0]) is empty
       // we dive deeper into the belly of the beast
       self._get(node[1], (err, newNode) => {
