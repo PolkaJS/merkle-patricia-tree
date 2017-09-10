@@ -19,14 +19,14 @@ export default class DB {
   _put(hash: string, node: Buffer, cb: Function) {
     this.db.put(hash, node, (err) => {
       if (err) cb(err);
-      cb(null);
+      cb(null, hash);
     });
   }
 
   _get(hash: string, cb: Function) {
     this.db.get(hash, (err, value) => {
       if (err) cb(err);
-      cb(null, Buffer.from(value));
+      cb(null, Buffer.from(value, 'hex'));
     });
   }
 

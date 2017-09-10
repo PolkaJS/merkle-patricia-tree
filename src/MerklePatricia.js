@@ -72,7 +72,6 @@ class MerklePatricia extends DB {
       node = RLP.encode([nibblesToBuffer(newKey), value]);
       self.root = self.createHash(node);
       self._put(self.root, node, cb);
-      cb(null, self.root);
     }
   }
 
@@ -94,7 +93,7 @@ class MerklePatricia extends DB {
   _addToBranch(branch: Array<any>, key: Array<number>, value: string | Buffer): Array<Array<number>> {
     if (!key.length)
       branch[-1] = value;
-    else
+    else // TODO: May not be a leaf or an extension
       branch[key[0]] = [this.addHexPrefix(key.slice(1), true), value];
     return branch;
   }
@@ -102,10 +101,7 @@ class MerklePatricia extends DB {
   _updateDB(node: Array<any>, cb: Function) {
     node = RLP.encode(node);
     let hash = self.createHash(node);
-    self._put(hash, node, (err) => {
-      if (err) cb(err);
-      cb(null, hash);
-    });
+    self._put(hash, node, cb);
   }
 
   _update(node: Array<any>, key: Array<number>, value: string | Buffer, cb: Function) {
@@ -116,7 +112,7 @@ class MerklePatricia extends DB {
     } else if (nodeType === NODE_TYPE.BRANCH) {
       // add to branch; but if the branch has a value there already, split
       if (!node[key[0]])
-        self._updateDB([self.addHexPrefix(key.slice(1)), value], cb);
+        self._updateDB([self.addHexPrefix(key.slice(1), true), value], cb);
       else
         self._update(node[key[0]], key.slice(1), value, (err, hash) => {
           node[key[0]][1] = hash;
@@ -227,8 +223,8 @@ function toNibbles(s: Buffer | string): Array<number> {
     * > bin_to_nibbles("hello")
     * [6, 8, 6, 5, 6, 12, 6, 12, 6, 15]
     **/
-  if (!Buffer.isBuffer(s)) { // $FlowFixMe
-    s = Buffer.from(s, 'hex');
+  if (!Buffer.isBuffer(s)) {
+    s = Buffer.from(s);
   }
   let result = [];
   while (s.length) { // $FlowFixMe
