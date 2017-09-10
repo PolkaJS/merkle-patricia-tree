@@ -117,8 +117,11 @@ class MerklePatricia extends DB {
       // add to branch; but if the branch has a value there already, split
       if (!node[key[0]])
         self._updateDB([self.addHexPrefix(key.slice(1)), value], cb);
-      else // TODO: You don't want to create a branch inside a branch
-        self._update(node[key[0]], key.slice(1), value, cb);
+      else
+        self._update(node[key[0]], key.slice(1), value, (err, hash) => {
+          node[key[0]][1] = hash;
+          self._updateDB(node, cb);
+        });
     }
     cb("invalid node");
   }
@@ -217,13 +220,10 @@ class MerklePatricia extends DB {
 }
 
 function toNibbles(s: Buffer | string): Array<number> {
-  /**
-    * > bin_to_nibbles("")
+  /** > bin_to_nibbles("")
     * []
     * > bin_to_nibbles("h")
     * [6, 8]
-    * > bin_to_nibbles("he")
-    * [6, 8, 6, 5]
     * > bin_to_nibbles("hello")
     * [6, 8, 6, 5, 6, 12, 6, 12, 6, 15]
     **/
