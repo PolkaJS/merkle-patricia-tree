@@ -1,6 +1,6 @@
 {
   "name": "@polkajs/merkle-patricia-tree",
-  "version": "1.0.0",
+  "version": "2.0.5",
   "description": "Merkle Patricia Tree implementation for the Ethereum type blockchain",
   "main": "./lib/MerklePatricia.js",
   "scripts": {

@@ -11,8 +11,11 @@ const MP = new MerklePatricia();
 // let d = rlp.decode_str(r);
 // console.log(d);
 
-MP.update('begin', 'start', (err, hash) => {
+MP.update(Buffer.from('6f3254', 'hex'), 'cat', (err, hash) => {
   console.log("HASH", hash);
+  MP.update(Buffer.from('6f5785', 'hex'), 'dog', (err, hash) => {
+    console.log("HASH", hash);
+  })
 });
 // MP.get('6e8c809a9347d7001428a3f9ed5cd9585f6c51ee1c559e07ec21803e662bca82', (err, res) => {
 //   console.log(res);

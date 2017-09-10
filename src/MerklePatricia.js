@@ -59,8 +59,11 @@ class MerklePatricia extends DB {
       self._get(self.root, (err, node) => {
         if (err) cb(err);
         // unpack
+        console.log("NODE", node);
         node = self._decodeNode(node);
+        console.log("NODE2", node);
         node[0] = toNibbles(node[0]);
+        console.log("NODE3", node);
         self._update(node, newKey, value, (err, hash) => {
           self.root = hash;
           cb(null, self.root);
@@ -105,6 +108,10 @@ class MerklePatricia extends DB {
   }
 
   _update(node: Array<any>, key: Array<number>, value: string | Buffer, cb: Function) {
+    console.log("_UPDATE");
+    console.log("node", node);
+    console.log("key", key);
+    console.log("value", value);
     const self = this;
     const nodeType = self._getNodeType(node);
     if (nodeType === NODE_TYPE.LEAF || NODE_TYPE.EXTENSION) {
