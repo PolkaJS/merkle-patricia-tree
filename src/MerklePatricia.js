@@ -37,33 +37,41 @@ class MerklePatricia extends DB {
     self.rootNode = [];
   }
 
-  update(key: string | Buffer, value: string | Buffer): null | string | Buffer {
+  get(key: string | Buffer, cb: Function): string {
+    self._get(key, (err, node) => {
+
+    });
+    return "";
+  }
+
+  update(key: string | Buffer, value: string | Buffer, cb: Function) {
     const self = this;
     let newKey = toNibbles(key);
     // improper length
     if (!key || key.length > 32) {
-      return null;
+      cb("Invalid key length");
     }
-    if (!value || !value.length) self.deleteKey(self.root, newKey, value);
+    // if (!value || !value.length) self.deleteKey(self.root, newKey, value);
 
     let node = new Buffer(0);
     if (self.root) {
       // Root exists so lets get the node
-      self.db.get(self.root, (err, node) => {
-        if (err) return err;
+      self._get(self.root, (err, node) => {
+        if (err) cb(err);
         // unpack
         node = self._decodeNode(node);
         node[0] = toNibbles(node[0]);
         self.root = self._update(node, newKey, value);
-        return self.root;
+        cb(null, self.root);
       });
+    } else {
+      // Otherwise root hash is empty; add a hex prefix
+      newKey = self.addHexPrefix(newKey, true);
+      node = RLP.encode([nibblesToBuffer(newKey), value]);
+      self.root = self.createHash(node);
+      self._put(self.root, node, cb);
+      cb(null, self.root);
     }
-    // Otherwise root hash is empty; add a hex prefix
-    newKey = self.addHexPrefix(newKey, true);
-    node = RLP.encode([nibblesToBuffer(newKey), value]);
-    self.root = self.createHash(node);
-    self.db.put(self.root, node);
-    return self.root;
   }
 
   _getNodeType(node: Array<any>): number | null {
@@ -107,7 +115,7 @@ class MerklePatricia extends DB {
       } else {
         // create and store branch
         let hash = self.createHash(RLP.encode(branch));
-        self.db.put(hash, branch);
+        self._put(hash, RLP.encode(branch), noop);
         node = [self.addHexPrefix(prefix), hash];
       }
     } else if (nodeType === NODE_TYPE.BRANCH) {
@@ -117,8 +125,8 @@ class MerklePatricia extends DB {
       else
         node[key[0]] = self._update(node[key[0]], key.slice(1), value);
     } else if (nodeType === NODE_TYPE.EXTENSION) { // we have key values left over in the key but node_key (node[0]) is empty
-      // we dive deeper into the beast
-      self.db.get(node[1], (err, newNode) => {
+      // we dive deeper into the belly of the beast
+      self._get(node[1], (err, newNode) => {
         if (err) return err;
         // unpack
         newNode    = self._decodeNode(newNode);
@@ -129,7 +137,7 @@ class MerklePatricia extends DB {
     }
     node = RLP.encode(node);
     let hash = self.createHash(node);
-    self.db.put(hash, node);
+    self._put(hash, node, noop);
     return hash;
   }
 
@@ -157,7 +165,7 @@ class MerklePatricia extends DB {
     let encoded = self._encodeNode(node);
     if (encoded.length < 32)
         return
-    self.db.delete(encoded);
+    self.delete(encoded);
   }
 
   _encodeNode(node: Array<number>): string | null {
@@ -167,7 +175,7 @@ class MerklePatricia extends DB {
     if (rlp.length < 32)
       return node.join('');
     let hashkey = this.createHash(rlp)
-    self.db.put(hashkey, rlp);
+    self.put(hashkey, rlp, noop);
     return hashkey;
   }
 
@@ -228,5 +236,7 @@ function nibblesToBuffer(arr: Array<number>): Buffer {
   }
   return buf
 }
+
+function noop() {}
 
 export default MerklePatricia;
