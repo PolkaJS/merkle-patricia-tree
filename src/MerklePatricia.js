@@ -91,9 +91,9 @@ class MerklePatricia extends DB {
     return null;
   }
 
-  _addToBranch(branch: Array<Array<any>>, key: Array<number>, value: string | Buffer): Array<Array<number>> {
+  _addToBranch(branch: Array<any>, key: Array<number>, value: string | Buffer): Array<Array<number>> {
     if (!key.length)
-      branch[-1] = [null, value];
+      branch[-1] = value;
     else
       branch[key[0]] = [this.addHexPrefix(key.slice(1), true), value];
     return branch;
@@ -117,30 +117,25 @@ class MerklePatricia extends DB {
       // add to branch; but if the branch has a value there already, split
       if (!node[key[0]])
         self._updateDB([self.addHexPrefix(key.slice(1)), value], cb);
-      else
-        self._update(node[key[0]], key.slice(1), value, (err, hash) => {
-          if (err) cb(err);
-          node[key[0]] = hash;
-          self._updateDB(node, cb);
-        });
+      else // TODO: You don't want to create a branch inside a branch
+        self._update(node[key[0]], key.slice(1), value, cb);
     }
+    cb("invalid node");
   }
 
   _leafExtension(node: Array<any>, type: number | null, key: Array<number>, value: string | Buffer, cb: Function) {
     let prefix = [];
     node[0] = self.removeHexPrefix(node[0]); // $FlowFixMe
     [prefix, node[0], key] = self._nodeUnshift(node[0], key);
-    if (type === NODE_TYPE.LEAF
-              || (type === NODE_TYPE.EXTENSION && node[0].length)) {
+    if (type === NODE_TYPE.LEAF || (type === NODE_TYPE.EXTENSION && node[0].length)) {
       let branch = new Array(17);
       branch = self._addToBranch(branch, key, value);
       branch = self._addToBranch(branch, node[0], node[1]);
       if (!prefix.length) {
         node = branch;
         self._updateDB(node, cb);
-      } else {
-        // create and store branch
-        self.updateDB(branch, (err, hash) => {
+      } else { // create and store branch, then update node
+        self._updateDB(branch, (err, hash) => {
           if (err) cb(err);
           node = [self.addHexPrefix(prefix), hash];
           self._updateDB(node, cb);
