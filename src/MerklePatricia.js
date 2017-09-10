@@ -140,8 +140,7 @@ class MerklePatricia extends DB {
         self._updateDB(node, cb);
       } else {
         // create and store branch
-        let hash = self.createHash(RLP.encode(branch));
-        self._put(hash, RLP.encode(branch), (err) => {
+        self.updateDB(branch, (err, hash) => {
           if (err) cb(err);
           node = [self.addHexPrefix(prefix), hash];
           self._updateDB(node, cb);
