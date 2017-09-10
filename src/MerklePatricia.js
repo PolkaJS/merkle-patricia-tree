@@ -61,8 +61,10 @@ class MerklePatricia extends DB {
         // unpack
         node = self._decodeNode(node);
         node[0] = toNibbles(node[0]);
-        self.root = self._update(node, newKey, value);
-        cb(null, self.root);
+        self._update(node, newKey, value, (err, hash) => {
+          self.root = hash;
+          cb(null, self.root);
+        });
       });
     } else {
       // Otherwise root hash is empty; add a hex prefix
@@ -97,48 +99,68 @@ class MerklePatricia extends DB {
     return branch;
   }
 
-  _update(node: Array<any>, key: Array<number>, value: string | Buffer): string {
+  _updateDB(node: Array<any>, cb: Function) {
+    node = RLP.encode(node);
+    let hash = self.createHash(node);
+    self._put(hash, node, (err) => {
+      if (err) cb(err);
+      cb(null, hash);
+    });
+  }
+
+  _update(node: Array<any>, key: Array<number>, value: string | Buffer, cb: Function) {
     const self = this;
     const nodeType = self._getNodeType(node);
-    let prefix = [];
     if (nodeType === NODE_TYPE.LEAF || NODE_TYPE.EXTENSION) {
-      node[0] = self.removeHexPrefix(node[0]); // $FlowFixMe
-      [prefix, node[0], key] = self._nodeUnshift(node[0], key);
+      self._leafExtension(node, nodeType, key, value, cb);
+    } else if (nodeType === NODE_TYPE.BRANCH) {
+      // add to branch; but if the branch has a value there already, split
+      if (!node[key[0]])
+        self._updateDB([self.addHexPrefix(key.slice(1)), value], cb);
+      else
+        self._update(node[key[0]], key.slice(1), value, (err, hash) => {
+          if (err) cb(err);
+          node[key[0]] = hash;
+          self._updateDB(node, cb);
+        });
     }
-    if (nodeType === NODE_TYPE.LEAF
-              || (nodeType === NODE_TYPE.EXTENSION && node[0].length)) {
+  }
+
+  _leafExtension(node: Array<any>, type: number | null, key: Array<number>, value: string | Buffer, cb: Function) {
+    let prefix = [];
+    node[0] = self.removeHexPrefix(node[0]); // $FlowFixMe
+    [prefix, node[0], key] = self._nodeUnshift(node[0], key);
+    if (type === NODE_TYPE.LEAF
+              || (type === NODE_TYPE.EXTENSION && node[0].length)) {
       let branch = new Array(17);
       branch = self._addToBranch(branch, key, value);
       branch = self._addToBranch(branch, node[0], node[1]);
       if (!prefix.length) {
-        node = branch
+        node = branch;
+        self._updateDB(node, cb);
       } else {
         // create and store branch
         let hash = self.createHash(RLP.encode(branch));
-        self._put(hash, RLP.encode(branch), noop);
-        node = [self.addHexPrefix(prefix), hash];
+        self._put(hash, RLP.encode(branch), (err) => {
+          if (err) cb(err);
+          node = [self.addHexPrefix(prefix), hash];
+          self._updateDB(node, cb);
+        });
       }
-    } else if (nodeType === NODE_TYPE.BRANCH) {
-      // add to branch; but if the branch has a value there already, split
-      if (!node[key[0]])
-        node[key[0]] = [self.addHexPrefix(key.slice(1)), value];
-      else
-        node[key[0]] = self._update(node[key[0]], key.slice(1), value);
-    } else if (nodeType === NODE_TYPE.EXTENSION) { // we have key values left over in the key but node_key (node[0]) is empty
+    } else { // (type === NODE_TYPE.EXTENSION) we have key values left over in the key but node_key (node[0]) is empty
       // we dive deeper into the belly of the beast
       self._get(node[1], (err, newNode) => {
-        if (err) return err;
+        if (err) cb(err);
         // unpack
         newNode    = self._decodeNode(newNode);
         newNode[0] = toNibbles(newNode[0]);
         // Update hash to the new node
-        node[1] = self._update(newNode, key, value);
+        self._update(newNode, key, value, (err, hash) => {
+          node[1] = hash;
+          self._updateDB(node, cb);
+        });
       });
     }
-    node = RLP.encode(node);
-    let hash = self.createHash(node);
-    self._put(hash, node, noop);
-    return hash;
   }
 
   _nodeUnshift(nodeKey: Array<number>, key: Array<number>): Array<Array<number>> {
