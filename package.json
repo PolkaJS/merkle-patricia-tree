@@ -38,7 +38,6 @@
     "@polkajs/rlp": "^1.3.9",
     "keccak": "^1.3.0",
     "leveldown": "^1.7.2",
-    "levelup": "^1.3.8",
-    "sha3": "^1.2.0"
+    "levelup": "^1.3.8"
   }
 }

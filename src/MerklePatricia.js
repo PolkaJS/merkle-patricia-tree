@@ -1,7 +1,7 @@
 // @flow
 
-import DB       from './db'; // $FlowFixMe
-import SHA3     from 'sha3';
+import DB     from './db';
+import Keccak from 'keccak';
 
 const RLP = require('@polkajs/rlp');
 
@@ -215,7 +215,7 @@ class MerklePatricia extends DB {
   }
 
   createHash(payload: string | Buffer): string {
-    return new SHA3.SHA3Hash(256).update(payload).digest('hex');
+    return new Keccak('keccak256').update(payload).digest('hex');
   }
 }
 
