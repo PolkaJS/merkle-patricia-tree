@@ -51,19 +51,12 @@ class MerklePatricia extends DB {
     if (!key || key.length > 32) {
       cb("Invalid key length");
     }
-    // if (!value || !value.length) self.deleteKey(self.root, newKey, value);
 
     let node = new Buffer(0);
     if (self.root) {
       // Root exists so lets get the node
       self._get(self.root, (err, node) => {
         if (err) cb(err);
-        // unpack
-        console.log("NODE", node);
-        node = self._decodeNode(node);
-        console.log("NODE2", node);
-        node[0] = toNibbles(node[0]);
-        console.log("NODE3", node);
         self._update(node, newKey, value, (err, hash) => {
           self.root = hash;
           cb(null, self.root);
@@ -83,7 +76,7 @@ class MerklePatricia extends DB {
       return NODE_TYPE.BLANK;
     if (node.length === 2) {
       // if terminator than leaf else extension
-      if (node[0][0] === 2 || node[0][0] === 3)
+      if (node[0][0] & 32)
         return NODE_TYPE.LEAF;
       else
         return NODE_TYPE.EXTENSION;
@@ -93,20 +86,6 @@ class MerklePatricia extends DB {
     return null;
   }
 
-  _addToBranch(branch: Array<any>, key: Array<number>, value: string | Buffer): Array<Array<number>> {
-    if (!key.length)
-      branch[-1] = value;
-    else // TODO: May not be a leaf or an extension
-      branch[key[0]] = [this.addHexPrefix(key.slice(1), true), value];
-    return branch;
-  }
-
-  _updateDB(node: Array<any>, cb: Function) {
-    node = RLP.encode(node);
-    let hash = self.createHash(node);
-    self._put(hash, node, cb);
-  }
-
   _update(node: Array<any>, key: Array<number>, value: string | Buffer, cb: Function) {
     console.log("_UPDATE");
     console.log("node", node);
@@ -114,41 +93,65 @@ class MerklePatricia extends DB {
     console.log("value", value);
     const self = this;
     const nodeType = self._getNodeType(node);
-    if (nodeType === NODE_TYPE.LEAF || NODE_TYPE.EXTENSION) {
+    console.log("NODE_TYPE", nodeType);
+    if (nodeType === NODE_TYPE.LEAF || nodeType === NODE_TYPE.EXTENSION) {
+      // unpack
+      node[1] = node[1].toString();
+      node[0] = toNibbles(node[0]);
       self._leafExtension(node, nodeType, key, value, cb);
     } else if (nodeType === NODE_TYPE.BRANCH) {
+      console.log("BRAAAAAAANCHHHHHHH");
       // add to branch; but if the branch has a value there already, split
-      if (!node[key[0]])
-        self._updateDB([self.addHexPrefix(key.slice(1), true), value], cb);
-      else
-        self._update(node[key[0]], key.slice(1), value, (err, hash) => {
-          node[key[0]][1] = hash;
-          self._updateDB(node, cb);
-        });
+      if (!node[key[0]] || !node[key[0]].length) {
+        node[key[0]] = [nibblesToBuffer(self.addHexPrefix(key.slice(1), true)), value];
+        self._updateDB(node, cb);
+      } else { // TODO ***************
+        self._update(node[key[0]], key.slice(1), value, cb);
+      }
+    } else {
+      cb("invalid node");
     }
-    cb("invalid node");
+  }
+
+  _updateDB(node: Array<any>, cb: Function) {
+    console.log("NODE", node);
+    node = RLP.encode(node);
+    console.log("NODE_AFTER", node);
+    let hash = this.createHash(node);
+    this._put(hash, node, cb);
   }
 
   _leafExtension(node: Array<any>, type: number | null, key: Array<number>, value: string | Buffer, cb: Function) {
+    const self = this;
+    console.log("_leafExtension");
     let prefix = [];
+    console.log("node1", node);
     node[0] = self.removeHexPrefix(node[0]); // $FlowFixMe
     [prefix, node[0], key] = self._nodeUnshift(node[0], key);
-    if (type === NODE_TYPE.LEAF || (type === NODE_TYPE.EXTENSION && node[0].length)) {
-      let branch = new Array(17);
+    console.log("prefix", prefix);
+    console.log("node3", node);
+    console.log("key", key);
+    if (type === NODE_TYPE.LEAF || (type === NODE_TYPE.EXTENSION && node[0].length)) { // ************
+      // create a branch and return an extension pointing to that branch
+      console.log("LEAF||EXTENSION+LENGTH");
+      let branch = new Array(17).fill(null);
       branch = self._addToBranch(branch, key, value);
+      console.log("BRANCH", branch);
       branch = self._addToBranch(branch, node[0], node[1]);
+      console.log("BRANCH", branch);
       self._updateDB(branch, (err, hash) => {
         if (err) cb(err);
-        node = [self.addHexPrefix(prefix), hash];
+        console.log("HASH", hash);
+        console.log("HERE");
+        console.log("NODE", node);
+        console.log("PREFIX", prefix);
+        node = [nibblesToBuffer(self.addHexPrefix(prefix)), hash];
         self._updateDB(node, cb);
       });
     } else { // (type === NODE_TYPE.EXTENSION) we have key values left over in the key but node_key (node[0]) is empty
       // we dive deeper into the belly of the beast
       self._get(node[1], (err, newNode) => {
         if (err) cb(err);
-        // unpack
-        newNode    = self._decodeNode(newNode);
-        newNode[0] = toNibbles(newNode[0]);
         // Update hash to the new node
         self._update(newNode, key, value, (err, hash) => {
           node[1] = hash;
@@ -156,6 +159,14 @@ class MerklePatricia extends DB {
         });
       });
     }
+  }
+
+  _addToBranch(branch: Array<any>, key: Array<number>, value: string | Buffer): Array<Array<number>> {
+    if (!key.length)
+      branch[-1] = value;
+    else // TODO: May not be a leaf or an extension
+      branch[key[0]] = [nibblesToBuffer(this.addHexPrefix(key.slice(1), true)), value];
+    return branch;
   }
 
   _nodeUnshift(nodeKey: Array<number>, key: Array<number>): Array<Array<number>> {
@@ -167,36 +178,24 @@ class MerklePatricia extends DB {
     return [key.slice(0, leftSize), nodeKey.slice(leftSize), key.slice(leftSize)]; // [left slice, right slice of node, right slice of key]
   }
 
-  _decodeNode(node: Array<any>): Array<any> { // input is really a Buffer... thanks flow.
-    let decoded = RLP.decode(node);
-    return [decoded[0].toString('hex'), decoded[1].toString()];
-  }
-
   deleteKey(node: any, key: Array<number>, value: string | Buffer) {
 
   }
 
-  _deleteNode(node: Array<number>) {
-    if (!node.length)
-      return;
-    let encoded = self._encodeNode(node);
-    if (encoded.length < 32)
-        return
-    self.delete(encoded);
-  }
+  // _encodeNode(node: Array<number>): string | null {
+  //   if (!node.length)
+  //     return BLANK_NODE;
+  //   let rlp = RLP.encode(node);
+  //   if (rlp.length < 32)
+  //     return node.join('');
+  //   let hashkey = this.createHash(rlp)
+  //   this._put(hashkey, rlp, noop);
+  //   return hashkey;
+  // }
 
-  _encodeNode(node: Array<number>): string | null {
-    if (!node.length)
-      return BLANK_NODE;
-    let rlp = RLP.encode(node);
-    if (rlp.length < 32)
-      return node.join('');
-    let hashkey = this.createHash(rlp)
-    self.put(hashkey, rlp, noop);
-    return hashkey;
-  }
-
-  addHexPrefix(key: Array<number>, terminator?: bool = false): Array<number> {
+  addHexPrefix(key: Array<number>, terminator?: bool = false): Array<number> | null {
+    if (!key.length)
+      return null;
     let HP = 0;
 
     if (terminator)
@@ -242,7 +241,8 @@ function toNibbles(s: Buffer | string): Array<number> {
   return result;
 }
 
-function nibblesToBuffer(arr: Array<number>): Buffer {
+function nibblesToBuffer(arr: Array<number> | null): Buffer {
+  if (!arr) return new Buffer(0);
   let buf = new Buffer(arr.length / 2)
   for (let i = 0; i < buf.length; i++) {
     let q = i * 2

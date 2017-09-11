@@ -1,5 +1,6 @@
 // @flow
 import { Duplex } from "stream";
+import RLP        from '@polkajs/rlp';
 import levelup    from 'levelup';
 
 /****************************** ABOUT *********************************
@@ -18,7 +19,7 @@ export default class DB {
 
   _put(hash: string, node: Buffer, cb: Function) {
     console.log(`PUT: hash: ${hash}, node: ${node.toString('hex')}`);
-    this.db.put(hash, node, (err) => {
+    this.db.put(hash, node.toString('hex'), (err) => {
       if (err) cb(err);
       cb(null, hash);
     });
@@ -28,7 +29,7 @@ export default class DB {
     console.log(`GET: hash: ${hash}`);
     this.db.get(hash, (err, value) => {
       if (err) cb(err);
-      cb(null, Buffer.from(value));
+      cb(null, RLP.decode(Buffer.from(value, 'hex')));
     });
   }
 
