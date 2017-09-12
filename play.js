@@ -11,7 +11,8 @@ MP.update(Buffer.from('6f3254', 'hex'), 'cat', (err, hash) => {
   MP.update(Buffer.from('6f5785', 'hex'), 'dog', (err, hash) => {
     console.log("HASH2", hash);
     console.log("BEGIN 3");
-    MP.get(Buffer.from('6f59', 'hex'), (err, value) => {
+    MP.get(Buffer.from('6f5785', 'hex'), (err, value) => {
+      if (err) console.log("err", err);
       console.log("value", value);
     });
     // MP.update(Buffer.from('6154', 'hex'), 'turtle', (err, hash) => {
@@ -22,14 +23,14 @@ MP.update(Buffer.from('6f3254', 'hex'), 'cat', (err, hash) => {
 
 
 // let db = levelup('./db/');
-
-// db.get('32da2312b1ed5801b29fcb9c2e0dd20a2dbb4cd7c088590d8e015cbf255de204', (err, value) => {
+//
+// db.get('6ee1e64ac3d93bdbf48c0a2cc02a91df9e83a3dc11c03568b3631a8fcd2ca9d2', (err, value) => {
 //   let dec = RLP.decode(Buffer.from(value, 'hex'));
 //   console.log('dec[0]', dec[0]);
 //   console.log('dec[1]', dec[1].toString());
 // });
 
-// db.get('7d5c5564daa19c4c55015cd274b8a0a2dfd485f56641d602ce40a2793a15dfa6', (err, value) => {
+// db.get('83f4a1f14e9c84159649a0a6dd754c4c00dfa4e3a95a78b9c93f472c310af7a2', (err, value) => {
 //   let dec = RLP.decode(Buffer.from(value, 'hex'));
 //   console.log(dec);
 //   // let decBranch = RLP.decode(dec[5]);

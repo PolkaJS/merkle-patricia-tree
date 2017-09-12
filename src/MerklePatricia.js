@@ -11,13 +11,14 @@ const BLANK_ROOT        = '';
 const NIBBLE_TERMINATOR = 16;
 
 /**
+  *********************************************************************************
   * NODE TYPES:
   * BLANK nodes will either be a '' or null and represent an empty slot in a BRANCH
   * LEAF nodes are used to represent data (value), if you're in a BRANCH,
   * the value will be the 17th position and look like '\xc6\x85start'
   * EXTENSION nodes represent an address lookup for the DB
   * BRANCH nodes are of length 17 and contain BLANKs, LEAFs, and EXTENSIONS
-  **/
+  *********************************************************************************/
 const NODE_TYPE = {
   BLANK:     0,    // null
   LEAF:      1,    // ['\x02', '\xc6\x85start'] or '\xc6\x85start'
@@ -44,20 +45,39 @@ class MerklePatricia extends DB {
 
   _getValue(node: Array<any>, key: Array<number>, cb: Function) {
     const self = this;
+    console.log(chalk.magenta("node"), node);
+    console.log(chalk.magenta("key"), key);
     const nodeType = self._getNodeType(node);
+    node[0] = toNibbles(node[0]);
     if (nodeType === NODE_TYPE.LEAF) {
-      let prefix = []; // $FlowFixMe
+      let prefix = [];
+      node[0] = self.removeHexPrefix(node[0]); // $FlowFixMe
       [prefix, node[0], key] = self._nodeUnshift(node[0], key);
-      if (!node[0].length)
-        cb(null, node[0]);
+      console.log(chalk.red("LEAF"));
+      console.log(chalk.red("node"), node);
+      console.log(chalk.red("key"), key);
+      if (!key.length && node[1])
+        cb(null, node[1].toString());
       else
         cb("node not found");
     } else if (nodeType === NODE_TYPE.BRANCH) {
-      let prefix = key.slice(0, 1); // $FlowFixMe
-      self._getValue(node[prefix], key, cb);
+      console.log(chalk.blue("BRANCH"));
+      let prefix = key.splice(0, 1);
+      console.log(chalk.blue("prefix"), prefix);
+      if (prefix === 16 && node[16].length)
+        cb(null, node[16]);
+      else // $FlowFixMe
+        self._getValue(node[prefix], key, cb);
     } else if (nodeType === NODE_TYPE.EXTENSION) {
-      let prefix = []; // $FlowFixMe
+      console.log(chalk.yellow("EXTENSION"));
+      let prefix = [];
+      console.log(chalk.yellow("node before"), node);
+      node[0] = self.removeHexPrefix(node[0]);
+      console.log(chalk.yellow("node before 2"), node); // $FlowFixMe
       [prefix, node[0], key] = self._nodeUnshift(node[0], key);
+      console.log(chalk.yellow("prefix"), prefix);
+      console.log(chalk.yellow("node"), node);
+      console.log(chalk.yellow("key"), key);
       self._get(node[1], (err, newNode) => {
         if (err) cb(err);
         self._getValue(newNode, key, cb);
@@ -181,8 +201,10 @@ class MerklePatricia extends DB {
     // lets get the shared values of nodeKey and key:
     let length   = (nodeKey.length > key.length) ? key.length : nodeKey.length;
     let leftSize = 0;
-    while (nodeKey[leftSize] === key[leftSize])
+    while (nodeKey[leftSize] === key[leftSize] && length) {
       leftSize++;
+      length--;
+    }
     return [key.slice(0, leftSize), nodeKey.slice(leftSize), key.slice(leftSize)]; // [left slice, right slice of node, right slice of key]
   }
 
