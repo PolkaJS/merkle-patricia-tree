@@ -265,6 +265,4 @@ function nibblesToBuffer(arr: Array<number> | null): Buffer {
   return buf
 }
 
-function noop() {}
-
 export default MerklePatricia;
