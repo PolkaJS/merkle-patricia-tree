@@ -19,6 +19,36 @@ Merkle Patricia trees provide a cryptographically authenticated data structure t
 
 [Understanding the Ethereum Trie](https://easythereentropy.wordpress.com/2014/06/04/understanding-the-ethereum-trie/)
 
+## Example
+```js
+const MerklePatricia = require('@polkajs/merkle-patricia-tree').default;
+
+const MP = new MerklePatricia();
+
+MP.update(Buffer.from('6f3254', 'hex'), 'cat', (err, hash) => {
+  console.log("HASH1", hash); // 65869c16e2b12917ce52b143349a6faa7e08cb3f8da499aeca619adbe7ffe9db
+  MP.update(Buffer.from('6f5785', 'hex'), 'dog', (err, hash) => {
+    console.log("HASH2", hash); // ce79f3b52eb8717a6cfaa1a35acb09ef42acf21be030e3a10c7992f377a24e65
+    MP.get(Buffer.from('6f5785', 'hex'), (err, value) => {
+      console.log("value", value); // dog
+    });
+  });
+});
+```
+
+## API
+
+### constructor(root?: string): MerklePatricia
+
+### get(key: string | Buffer, cb: Function)
+* key: a hex representation of the location within the trie
+* cb: **(err, value)**
+  - err: if an error it will return a value, otherwise null
+  - value: a string of the value stored
+
+### createHash(payload: string | Buffer): string
+* payload: input
+* **return** a hex string representation of the hash
 
 
 ## ISC License (ISC)
