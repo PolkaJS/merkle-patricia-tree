@@ -26,7 +26,7 @@ const NODE_TYPE = {
 }
 
 class MerklePatricia extends DB {
-  root: null | string;
+  root: string;
   rootNode: Array<number>;
   constructor(root?: string) {
     super();
@@ -34,15 +34,37 @@ class MerklePatricia extends DB {
 
     // set the root hash:
     self.root = (root) ? root : BLANK_ROOT;
-    // prep a node
-    self.rootNode = [];
   }
 
-  get(key: string | Buffer, cb: Function): string {
-    self._get(key, (err, node) => {
-
+  get(key: string | Buffer, cb: Function) {
+    this._get(this.root, (err, node) => {
+      this._getValue(node, toNibbles(key), cb);
     });
-    return "";
+  }
+
+  _getValue(node: Array<any>, key: Array<number>, cb: Function) {
+    const self = this;
+    const nodeType = self._getNodeType(node);
+    if (nodeType === NODE_TYPE.LEAF) {
+      let prefix = []; // $FlowFixMe
+      [prefix, node[0], key] = self._nodeUnshift(node[0], key);
+      if (!node[0].length)
+        cb(null, node[0]);
+      else
+        cb("node not found");
+    } else if (nodeType === NODE_TYPE.BRANCH) {
+      let prefix = key.slice(0, 1); // $FlowFixMe
+      self._getValue(node[prefix], key, cb);
+    } else if (nodeType === NODE_TYPE.EXTENSION) {
+      let prefix = []; // $FlowFixMe
+      [prefix, node[0], key] = self._nodeUnshift(node[0], key);
+      self._get(node[1], (err, newNode) => {
+        if (err) cb(err);
+        self._getValue(newNode, key, cb);
+      });
+    } else {
+      cb("node not found");
+    }
   }
 
   update(key: string | Buffer, value: string | Buffer, cb: Function) {
@@ -186,21 +208,6 @@ class MerklePatricia extends DB {
       leftSize++;
     return [key.slice(0, leftSize), nodeKey.slice(leftSize), key.slice(leftSize)]; // [left slice, right slice of node, right slice of key]
   }
-
-  deleteKey(node: any, key: Array<number>, value: string | Buffer) {
-
-  }
-
-  // _encodeNode(node: Array<number>): string | null {
-  //   if (!node.length)
-  //     return BLANK_NODE;
-  //   let rlp = RLP.encode(node);
-  //   if (rlp.length < 32)
-  //     return node.join('');
-  //   let hashkey = this.createHash(rlp)
-  //   this._put(hashkey, rlp, noop);
-  //   return hashkey;
-  // }
 
   addHexPrefix(key: Array<number>, terminator?: bool = false): Array<number> {
     let HP = 0;
