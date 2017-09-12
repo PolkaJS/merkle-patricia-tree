@@ -106,7 +106,9 @@ class MerklePatricia extends DB {
       if (!node[key[0]] || !node[key[0]].length) {
         node[key[0]] = [nibblesToBuffer(self.addHexPrefix(key.slice(1), true)), value];
         self._updateDB(node, cb);
-      } else { // TODO ***************
+      } else {
+        if (!Array.isArray(node[key[0]])) // unique case, RLP does not decode deep arrays
+          node[key[0]] = RLP.decode(node[key[0]]);
         self._update(node[key[0]], key.slice(1), value, (err, hash, newNode) => {
           node[key[0]] = newNode;
           self._updateDB(node, cb);
