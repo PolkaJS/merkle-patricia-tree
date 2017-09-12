@@ -21,7 +21,7 @@ export default class DB {
     console.log(`PUT: hash: ${hash}, node: ${node.toString('hex')}`);
     this.db.put(hash, node.toString('hex'), (err) => {
       if (err) cb(err);
-      cb(null, hash);
+      cb(null, hash, node);
     });
   }
 

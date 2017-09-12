@@ -2,6 +2,7 @@
 
 import DB     from './db';
 import Keccak from 'keccak';
+import chalk  from 'chalk';
 
 const RLP = require('@polkajs/rlp');
 
@@ -87,26 +88,29 @@ class MerklePatricia extends DB {
   }
 
   _update(node: Array<any>, key: Array<number>, value: string | Buffer, cb: Function) {
-    console.log("_UPDATE");
-    console.log("node", node);
-    console.log("key", key);
-    console.log("value", value);
+    console.log(chalk.blue("_UPDATE"));
+    console.log(chalk.blue("node", node));
+    console.log(chalk.blue("key", key));
+    console.log(chalk.blue("value", value));
     const self = this;
     const nodeType = self._getNodeType(node);
-    console.log("NODE_TYPE", nodeType);
+    console.log(chalk.blue("NODE_TYPE", nodeType));
     if (nodeType === NODE_TYPE.LEAF || nodeType === NODE_TYPE.EXTENSION) {
       // unpack
       node[1] = node[1].toString();
       node[0] = toNibbles(node[0]);
       self._leafExtension(node, nodeType, key, value, cb);
     } else if (nodeType === NODE_TYPE.BRANCH) {
-      console.log("BRAAAAAAANCHHHHHHH");
+      console.log(chalk.blue("BRAAAAAAANCHHHHHHH"));
       // add to branch; but if the branch has a value there already, split
       if (!node[key[0]] || !node[key[0]].length) {
         node[key[0]] = [nibblesToBuffer(self.addHexPrefix(key.slice(1), true)), value];
         self._updateDB(node, cb);
       } else { // TODO ***************
-        self._update(node[key[0]], key.slice(1), value, cb);
+        self._update(node[key[0]], key.slice(1), value, (err, hash, newNode) => {
+          node[key[0]] = newNode;
+          self._updateDB(node, cb);
+        });
       }
     } else {
       cb("invalid node");
@@ -114,38 +118,39 @@ class MerklePatricia extends DB {
   }
 
   _updateDB(node: Array<any>, cb: Function) {
-    console.log("NODE", node);
+    console.log(chalk.blue("NODE"), node);
     node = RLP.encode(node);
-    console.log("NODE_AFTER", node);
+    console.log(chalk.blue("NODE_AFTER"), node);
     let hash = this.createHash(node);
     this._put(hash, node, cb);
   }
 
   _leafExtension(node: Array<any>, type: number | null, key: Array<number>, value: string | Buffer, cb: Function) {
     const self = this;
-    console.log("_leafExtension");
+    console.log(chalk.yellow("_leafExtension"));
     let prefix = [];
-    console.log("node1", node);
+    console.log(chalk.yellow("node1", node));
     node[0] = self.removeHexPrefix(node[0]); // $FlowFixMe
     [prefix, node[0], key] = self._nodeUnshift(node[0], key);
-    console.log("prefix", prefix);
-    console.log("node3", node);
-    console.log("key", key);
+    console.log(chalk.yellow("prefix", prefix));
+    console.log(chalk.yellow("node3", node));
+    console.log(chalk.yellow("key", key));
     if (type === NODE_TYPE.LEAF || (type === NODE_TYPE.EXTENSION && node[0].length)) { // ************
       // create a branch and return an extension pointing to that branch
-      console.log("LEAF||EXTENSION+LENGTH");
+      console.log(chalk.yellow("LEAF||EXTENSION+LENGTH"));
       let branch = new Array(17).fill(null);
-      branch = self._addToBranch(branch, key, value);
-      console.log("BRANCH", branch);
-      branch = self._addToBranch(branch, node[0], node[1]);
-      console.log("BRANCH", branch);
+      branch = self._addToBranch(branch, key, value, true);
+      console.log(chalk.yellow("BRANCH"), branch);
+      console.log("NODE", node);
+      branch = self._addToBranch(branch, node[0], node[1], type === NODE_TYPE.LEAF);
+      console.log(chalk.yellow("BRANCH"), branch);
       self._updateDB(branch, (err, hash) => {
         if (err) cb(err);
-        console.log("HASH", hash);
-        console.log("HERE");
-        console.log("NODE", node);
-        console.log("PREFIX", prefix);
+        console.log(chalk.yellow("HASH"), hash);
+        console.log(chalk.yellow("NODE"), node);
+        console.log(chalk.yellow("PREFIX"), prefix);
         node = [nibblesToBuffer(self.addHexPrefix(prefix)), hash];
+        console.log(chalk.yellow("NODE AFTER"), node);
         self._updateDB(node, cb);
       });
     } else { // (type === NODE_TYPE.EXTENSION) we have key values left over in the key but node_key (node[0]) is empty
@@ -154,18 +159,20 @@ class MerklePatricia extends DB {
         if (err) cb(err);
         // Update hash to the new node
         self._update(newNode, key, value, (err, hash) => {
-          node[1] = hash;
+          node = [nibblesToBuffer(self.addHexPrefix(prefix)), hash];
           self._updateDB(node, cb);
         });
       });
     }
   }
 
-  _addToBranch(branch: Array<any>, key: Array<number>, value: string | Buffer): Array<Array<number>> {
+  _addToBranch(branch: Array<any>, key: Array<number>, value: string | Buffer, terminator: bool): Array<Array<number>> {
+    console.log(chalk.magenta("key"), key);
+    console.log(chalk.magenta("value"), value);
     if (!key.length)
       branch[-1] = value;
-    else // TODO: May not be a leaf or an extension
-      branch[key[0]] = [nibblesToBuffer(this.addHexPrefix(key.slice(1), true)), value];
+    else
+      branch[key[0]] = [nibblesToBuffer(this.addHexPrefix(key.slice(1), terminator)), value];
     return branch;
   }
 
@@ -193,9 +200,7 @@ class MerklePatricia extends DB {
   //   return hashkey;
   // }
 
-  addHexPrefix(key: Array<number>, terminator?: bool = false): Array<number> | null {
-    if (!key.length)
-      return null;
+  addHexPrefix(key: Array<number>, terminator?: bool = false): Array<number> {
     let HP = 0;
 
     if (terminator)
