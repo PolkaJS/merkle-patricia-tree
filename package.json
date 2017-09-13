@@ -31,7 +31,8 @@
     "chalk": "^2.1.0",
     "eslint": "^4.0.0",
     "flow-bin": "^0.53.0",
-    "random-words": "0.0.1",
+    "random-hex-string": "^1.0.0",
+    "random-word": "^2.0.0",
     "rlp": "^2.0.0",
     "tape": "^4.6.3"
   },

@@ -2,7 +2,7 @@
 
 import DB     from './db';
 import Keccak from 'keccak';
-import chalk  from 'chalk';
+// import chalk  from 'chalk';
 
 const RLP = require('@polkajs/rlp');
 
@@ -45,39 +45,26 @@ class MerklePatricia extends DB {
 
   _getValue(node: Array<any>, key: Array<number>, cb: Function) {
     const self = this;
-    console.log(chalk.magenta("node"), node);
-    console.log(chalk.magenta("key"), key);
     const nodeType = self._getNodeType(node);
     node[0] = toNibbles(node[0]);
     if (nodeType === NODE_TYPE.LEAF) {
       let prefix = [];
       node[0] = self.removeHexPrefix(node[0]); // $FlowFixMe
       [prefix, node[0], key] = self._nodeUnshift(node[0], key);
-      console.log(chalk.red("LEAF"));
-      console.log(chalk.red("node"), node);
-      console.log(chalk.red("key"), key);
       if (!key.length && node[1])
         cb(null, node[1].toString());
       else
         cb("node not found");
     } else if (nodeType === NODE_TYPE.BRANCH) {
-      console.log(chalk.blue("BRANCH"));
       let prefix = key.splice(0, 1);
-      console.log(chalk.blue("prefix"), prefix);
       if (prefix === 16 && node[16].length)
         cb(null, node[16]);
       else // $FlowFixMe
         self._getValue(node[prefix], key, cb);
     } else if (nodeType === NODE_TYPE.EXTENSION) {
-      console.log(chalk.yellow("EXTENSION"));
       let prefix = [];
-      console.log(chalk.yellow("node before"), node);
-      node[0] = self.removeHexPrefix(node[0]);
-      console.log(chalk.yellow("node before 2"), node); // $FlowFixMe
+      node[0] = self.removeHexPrefix(node[0]); // $FlowFixMe
       [prefix, node[0], key] = self._nodeUnshift(node[0], key);
-      console.log(chalk.yellow("prefix"), prefix);
-      console.log(chalk.yellow("node"), node);
-      console.log(chalk.yellow("key"), key);
       self._get(node[1], (err, newNode) => {
         if (err) cb(err);
         self._getValue(newNode, key, cb);

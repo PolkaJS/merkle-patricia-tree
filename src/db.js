@@ -18,7 +18,6 @@ export default class DB {
   }
 
   _put(hash: string, node: Buffer, cb: Function) {
-    console.log(`PUT: hash: ${hash}, node: ${node.toString('hex')}`);
     this.db.put(hash, node.toString('hex'), (err) => {
       if (err) cb(err);
       cb(null, hash, node);
@@ -26,7 +25,6 @@ export default class DB {
   }
 
   _get(hash: string, cb: Function) {
-    console.log(`GET: hash: ${hash}`);
     this.db.get(hash, (err, value) => {
       if (err) cb(err);
       cb(null, RLP.decode(Buffer.from(value, 'hex')));

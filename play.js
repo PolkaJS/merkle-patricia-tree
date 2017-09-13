@@ -11,7 +11,7 @@ MP.update(Buffer.from('6f3254', 'hex'), 'cat', (err, hash) => {
   MP.update(Buffer.from('6f5785', 'hex'), 'dog', (err, hash) => {
     console.log("HASH2", hash);
     console.log("BEGIN 3");
-    MP.get(Buffer.from('6f5785', 'hex'), (err, value) => {
+    MP.get(Buffer.from('6f3254', 'hex'), (err, value) => {
       if (err) console.log("err", err);
       console.log("value", value);
     });
