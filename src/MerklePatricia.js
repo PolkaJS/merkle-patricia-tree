@@ -2,13 +2,9 @@
 
 import DB     from './db';
 import Keccak from 'keccak';
-// import chalk  from 'chalk';
+import chalk  from 'chalk';
 
 const RLP = require('@polkajs/rlp');
-
-const BLANK_NODE        = '';
-const BLANK_ROOT        = '';
-const NIBBLE_TERMINATOR = 16;
 
 /**
   *********************************************************************************
@@ -34,7 +30,7 @@ class MerklePatricia extends DB {
     const self = this;
 
     // set the root hash:
-    self.root = (root) ? root : BLANK_ROOT;
+    self.root = (root) ? root : '';
   }
 
   get(key: string | Buffer, cb: Function) {
@@ -46,7 +42,8 @@ class MerklePatricia extends DB {
   _getValue(node: Array<any>, key: Array<number>, cb: Function) {
     const self = this;
     const nodeType = self._getNodeType(node);
-    node[0] = toNibbles(node[0]);
+    if (nodeType !== NODE_TYPE.BRANCH)
+      node[0] = toNibbles(node[0]);
     if (nodeType === NODE_TYPE.LEAF) {
       let prefix = [];
       node[0] = self.removeHexPrefix(node[0]); // $FlowFixMe
@@ -56,10 +53,10 @@ class MerklePatricia extends DB {
       else
         cb("node not found");
     } else if (nodeType === NODE_TYPE.BRANCH) {
-      let prefix = key.splice(0, 1);
-      if (prefix === 16 && node[16].length)
-        cb(null, node[16]);
-      else // $FlowFixMe
+      let prefix = key.splice(0, 1)[0];
+      if (prefix === undefined && node[16].length)
+        cb(null, node[16].toString());
+      else
         self._getValue(node[prefix], key, cb);
     } else if (nodeType === NODE_TYPE.EXTENSION) {
       let prefix = [];
@@ -104,16 +101,15 @@ class MerklePatricia extends DB {
   _getNodeType(node: Array<any>): number | null {
     if (!node)
       return NODE_TYPE.BLANK;
-    if (node.length === 2) {
+    if (node.length < 17) {
       // if terminator than leaf else extension
       if (node[0][0] & 32)
         return NODE_TYPE.LEAF;
       else
         return NODE_TYPE.EXTENSION;
     }
-    if (node.length === 17)
+    else
       return NODE_TYPE.BRANCH;
-    return null;
   }
 
   _update(node: Array<any>, key: Array<number>, value: string | Buffer, cb: Function) {
@@ -126,6 +122,8 @@ class MerklePatricia extends DB {
       self._leafExtension(node, nodeType, key, value, cb);
     } else if (nodeType === NODE_TYPE.BRANCH) {
       // add to branch; but if the branch has a value there already, split
+      if (!key[0])
+        node[16] = value;
       if (!node[key[0]] || !node[key[0]].length) {
         node[key[0]] = [nibblesToBuffer(self.addHexPrefix(key.slice(1), true)), value];
         self._updateDB(node, cb);

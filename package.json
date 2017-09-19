@@ -7,8 +7,8 @@
     "lint+build+test": "yarn run lint && yarn run build && yarn run test",
     "lint": "echo linting... && eslint ./src/**/*.js && echo 'successfully linted'",
     "build": "echo building... && babel src/ -d lib/ && echo 'successfully built'",
-    "prepublish": "yarn run build",
-    "test": "echo running server tests... && tape test/**/*.js && echo 'successfully completed tests'"
+    "prepublish": "yarn run build && node cleanup.js",
+    "test": "echo running server tests... && tape test/**/*.js | tap-summary && echo 'successfully completed tests'"
   },
   "repository": {
     "type": "git",

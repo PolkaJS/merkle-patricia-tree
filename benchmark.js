@@ -3,7 +3,7 @@ const randomWord     = require('random-word');
 const randomHex      = require('random-hex-string');
 
 const MP = new MerklePatricia();
-const n = 1000;
+const n = 7000;
 
 function testLoop(i) {
   // create random key and value
