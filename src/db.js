@@ -1,5 +1,6 @@
 // @flow
 import { Duplex } from "stream";
+import RLP        from '@polkajs/rlp';
 import levelup    from 'levelup';
 
 /****************************** ABOUT *********************************
@@ -12,39 +13,36 @@ import levelup    from 'levelup';
 
 export default class DB {
   db: levelup;
-  constructor() {
-    this.db = levelup('./db/');
-  }
 
-  put(hash: string, block: string) {
-    this.db.put(hash, block, (err) => {
-      if (err) return err;
-      return null;
+  _put(hash: string, node: Buffer, cb: Function) {
+    this.db.put(hash, node.toString('hex'), (err) => {
+      if (err) cb(err);
+      cb(null, hash, node);
     });
   }
 
-  get(hash: string, cb: Function) {
+  _get(hash: string, cb: Function) {
     this.db.get(hash, (err, value) => {
-      if (err) return err;
-      cb(null, value);
+      if (err) cb(err);
+      cb(null, RLP.decode(Buffer.from(value, 'hex')));
     });
   }
 
-  delete(hash: string, cb: Function) {
+  _delete(hash: string, cb: Function) {
     this.db.delete(hash, (err) => {
-      if (err) return err;
+      if (err) cb(err);
       cb(null);
     })
   }
 
   // [ ['0x1a4...df2', { block data }], ['0xcb1...bb5', { block data }], ... ]
-  batchPut(hashValuePairs: Array<Array<mixed>>) {
+  _batchPut(hashValuePairs: Array<Array<mixed>>, cb: Function) {
     const hashes = hashValuePairs.map((hash) => {
       return { type: 'put', key: hash[0], value: hash[1] }
     });
     this.db.batch(hashes, (err) => {
-      if (err) return err;
-      return null;
+      if (err) cb(err);
+      cb(null);
     });
   }
 }
