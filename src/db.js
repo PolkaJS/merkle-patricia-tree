@@ -13,9 +13,6 @@ import levelup    from 'levelup';
 
 export default class DB {
   db: levelup;
-  constructor() {
-    this.db = levelup('./db/');
-  }
 
   _put(hash: string, node: Buffer, cb: Function) {
     this.db.put(hash, node.toString('hex'), (err) => {

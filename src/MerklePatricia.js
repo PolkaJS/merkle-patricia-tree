@@ -1,8 +1,9 @@
 // @flow
 
-import DB     from './db';
-import Keccak from 'keccak';
-import chalk  from 'chalk';
+import DB      from './db';
+import Keccak  from 'keccak';
+import levelup from 'levelup';
+import chalk   from 'chalk';
 
 const RLP = require('@polkajs/rlp');
 
@@ -22,14 +23,23 @@ const NODE_TYPE = {
   BRANCH:    3     // ['', '', [' ', '\xc6\x85start'], '', '', '', '', '', '', [' ', '\xc4\x83cat'], '', '', '', '', [' \x03', '\xc9\x88dog-deep'], '', '']
 }
 
+type Options = {
+  db: levelup // path to database
+}
+
 class MerklePatricia extends DB {
   root: string;
   rootNode: Array<number>;
-  constructor(root?: string) {
+  constructor(root?: string | Options, options: Options) {
     super();
     const self = this;
-
+    // setup options
+    if (typeof root === 'object') {
+      options = root;
+      root = '';
+    }
     // set the root hash:
+    (options && options.db) ? self.db = options.db : self.db = levelup('./db/');
     self.root = (root) ? root : '';
   }
 
@@ -54,10 +64,13 @@ class MerklePatricia extends DB {
         cb("node not found");
     } else if (nodeType === NODE_TYPE.BRANCH) {
       let prefix = key.splice(0, 1)[0];
-      if (prefix === undefined && node[16].length)
+      if (prefix === undefined && node[16].length) {
         cb(null, node[16].toString());
-      else
+      } else {
+        if (Buffer.isBuffer(node[prefix]))
+          node[prefix] = RLP.decode(node[prefix]);
         self._getValue(node[prefix], key, cb);
+      }
     } else if (nodeType === NODE_TYPE.EXTENSION) {
       let prefix = [];
       node[0] = self.removeHexPrefix(node[0]); // $FlowFixMe
@@ -176,7 +189,7 @@ class MerklePatricia extends DB {
 
   _addToBranch(branch: Array<any>, key: Array<number>, value: string | Buffer, terminator: bool): Array<Array<number>> {
     if (!key.length)
-      branch[-1] = value;
+      branch[16] = value;
     else
       branch[key[0]] = [nibblesToBuffer(this.addHexPrefix(key.slice(1), terminator)), value];
     return branch;
