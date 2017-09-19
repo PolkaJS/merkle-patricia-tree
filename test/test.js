@@ -52,7 +52,7 @@ test('Create a branch, check both values are obtainable', function (t, db) {
 });
 
 test('Create a branch, then add value to 16th value of branch', function (t, db) {
-    t.plan(10);
+    t.plan(9);
 
     const MP = new MerklePatricia({ db: db });
 
@@ -64,17 +64,14 @@ test('Create a branch, then add value to 16th value of branch', function (t, db)
           t.error(err);
           MP.get(Buffer.from('6f3254', 'hex'), (err, value) => {
             t.error(err);
-            MP.get(Buffer.from('6f3254', 'hex'), (err, value) => {
+            t.equal(value, 'cat', 'get cat');
+            MP.get(Buffer.from('6f5785', 'hex'), (err, value) => {
               t.error(err);
-              t.equal(value, 'cat', 'get cat');
-              MP.get(Buffer.from('6f5785', 'hex'), (err, value) => {
+              t.equal(value, 'dog', 'get dog');
+              MP.get(Buffer.from('6f', 'hex'), (err, value) => {
                 t.error(err);
-                t.equal(value, 'dog', 'get dog');
-                MP.get(Buffer.from('6f', 'hex'), (err, value) => {
-                  t.error(err);
-                  t.equal(value, 'turtle', 'get turtle');
-                  t.end();
-                });
+                t.equal(value, 'turtle', 'get turtle');
+                t.end();
               });
             });
           });
@@ -84,7 +81,7 @@ test('Create a branch, then add value to 16th value of branch', function (t, db)
 });
 
 test('Create a branch, then add another to an empty slot', function (t, db) {
-    t.plan(10);
+    t.plan(9);
 
     const MP = new MerklePatricia({ db: db });
 
@@ -96,17 +93,14 @@ test('Create a branch, then add another to an empty slot', function (t, db) {
           t.error(err);
           MP.get(Buffer.from('6f3254', 'hex'), (err, value) => {
             t.error(err);
-            MP.get(Buffer.from('6f3254', 'hex'), (err, value) => {
+            t.equal(value, 'cat', 'get cat');
+            MP.get(Buffer.from('6f5785', 'hex'), (err, value) => {
               t.error(err);
-              t.equal(value, 'cat', 'get cat');
-              MP.get(Buffer.from('6f5785', 'hex'), (err, value) => {
+              t.equal(value, 'dog', 'get dog');
+              MP.get(Buffer.from('6f77', 'hex'), (err, value) => {
                 t.error(err);
-                t.equal(value, 'dog', 'get dog');
-                MP.get(Buffer.from('6f77', 'hex'), (err, value) => {
-                  t.error(err);
-                  t.equal(value, 'turtle', 'get turtle');
-                  t.end();
-                });
+                t.equal(value, 'turtle', 'get turtle');
+                t.end();
               });
             });
           });
@@ -116,7 +110,7 @@ test('Create a branch, then add another to an empty slot', function (t, db) {
 });
 
 test('Create a branch, then force a split at dog to create a second branch', function (t, db) {
-    t.plan(10);
+    t.plan(9);
 
     const MP = new MerklePatricia({ db: db });
 
@@ -128,17 +122,14 @@ test('Create a branch, then force a split at dog to create a second branch', fun
           t.error(err);
           MP.get(Buffer.from('6f3254', 'hex'), (err, value) => {
             t.error(err);
-            MP.get(Buffer.from('6f3254', 'hex'), (err, value) => {
+            t.equal(value, 'cat', 'get cat');
+            MP.get(Buffer.from('6f5785', 'hex'), (err, value) => {
               t.error(err);
-              t.equal(value, 'cat', 'get cat');
-              MP.get(Buffer.from('6f5785', 'hex'), (err, value) => {
+              t.equal(value, 'dog', 'get dog');
+              MP.get(Buffer.from('6f5799', 'hex'), (err, value) => {
                 t.error(err);
-                t.equal(value, 'dog', 'get dog');
-                MP.get(Buffer.from('6f5799', 'hex'), (err, value) => {
-                  t.error(err);
-                  t.equal(value, 'turtle', 'get turtle');
-                  t.end();
-                });
+                t.equal(value, 'turtle', 'get turtle');
+                t.end();
               });
             });
           });
@@ -148,7 +139,7 @@ test('Create a branch, then force a split at dog to create a second branch', fun
 });
 
 test('Create a branch, then force a split, but the new value is at pos 16', function (t, db) {
-    t.plan(10);
+    t.plan(9);
 
     const MP = new MerklePatricia({ db: db });
 
@@ -160,17 +151,14 @@ test('Create a branch, then force a split, but the new value is at pos 16', func
           t.error(err);
           MP.get(Buffer.from('6f3254', 'hex'), (err, value) => {
             t.error(err);
-            MP.get(Buffer.from('6f3254', 'hex'), (err, value) => {
+            t.equal(value, 'cat', 'get cat');
+            MP.get(Buffer.from('6f5785', 'hex'), (err, value) => {
               t.error(err);
-              t.equal(value, 'cat', 'get cat');
-              MP.get(Buffer.from('6f5785', 'hex'), (err, value) => {
+              t.equal(value, 'dog', 'get dog');
+              MP.get(Buffer.from('6f57', 'hex'), (err, value) => {
                 t.error(err);
-                t.equal(value, 'dog', 'get dog');
-                MP.get(Buffer.from('6f57', 'hex'), (err, value) => {
-                  t.error(err);
-                  t.equal(value, 'turtle', 'get turtle');
-                  t.end();
-                });
+                t.equal(value, 'turtle', 'get turtle');
+                t.end();
               });
             });
           });
