@@ -30,7 +30,7 @@
     "babel-preset-flow": "^6.23.0",
     "chalk": "^2.1.0",
     "eslint": "^4.0.0",
-    "flow-bin": "^0.55.0",
+    "flow-bin": "^0.73.0",
     "random-hex-string": "^1.0.0",
     "random-word": "^2.0.0",
     "rlp": "^2.0.0",
