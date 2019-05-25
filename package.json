@@ -34,7 +34,7 @@
     "random-hex-string": "^1.0.0",
     "random-word": "^2.0.0",
     "rlp": "^2.0.0",
-    "tape": "^4.6.3"
+    "tape": "4.10.1"
   },
   "dependencies": {
     "@polkajs/rlp": "^1.4.0",
